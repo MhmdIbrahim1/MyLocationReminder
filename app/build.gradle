@@ -37,7 +37,9 @@ android {
     }
 
     buildFeatures {
-        dataBinding true
+
+        viewBinding = true
+        dataBinding = true
     }
 
     packagingOptions {
@@ -75,7 +77,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.0-alpha2'
     implementation 'com.google.firebase:firebase-auth:20.0.2'
-    implementation 'com.google.firebase:firebase-messaging:23.1.1'
     testImplementation project(path: ':app')
     androidTestImplementation project(path: ':app')
     androidTestImplementation project(path: ':app')
