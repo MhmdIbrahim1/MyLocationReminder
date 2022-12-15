@@ -10,8 +10,8 @@ import com.udacity.project4.locationreminders.data.dto.Result
 import kotlinx.coroutines.launch
 
 class RemindersListViewModel(
-    app: Application,
-    private val dataSource: ReminderDataSource
+        app: Application,
+        private val dataSource: ReminderDataSource
 ) : BaseViewModel(app) {
     val remindersList = MutableLiveData<List<ReminderDataItem>>()
 
@@ -29,12 +29,12 @@ class RemindersListViewModel(
                     val dataList = ArrayList<ReminderDataItem>()
                     dataList.addAll((result.data as List<ReminderDTO>).map { reminder ->
                         ReminderDataItem(
-                            reminder.title,
-                            reminder.description,
-                            reminder.location,
-                            reminder.latitude,
-                            reminder.longitude,
-                            reminder.id
+                                reminder.title,
+                                reminder.description,
+                                reminder.location,
+                                reminder.latitude,
+                                reminder.longitude,
+                                reminder.id
                         )
                     })
                     remindersList.value = dataList

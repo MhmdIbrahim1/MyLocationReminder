@@ -83,7 +83,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private fun locationSelected() {
         if(currentPOI==null)
             Toast.makeText(context, getString(R.string.selectpoi), Toast.LENGTH_SHORT).show()
-        else {
+else {
             _viewModel.savePOILocation(currentPOI)
             findNavController().navigate(SelectLocationFragmentDirections.actionSelectLocationFragmentToSaveReminderFragment())
 
@@ -190,53 +190,53 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     private fun setMapStyle(gmap: GoogleMap) {
-        try {
-            val success = gmap.setMapStyle(
-                MapStyleOptions.loadRawResourceStyle(
-                    context,
-                    R.raw.map_style
-                )
-            )
-            if (!success) {
-                Log.e("MapStyle","Style parsing failed.")
-            }
-        }catch (e: Resources.NotFoundException){
-            Log.e("mapStyleNotFound","${e.message}")
-        }
+try {
+    val success = gmap.setMapStyle(
+        MapStyleOptions.loadRawResourceStyle(
+            context,
+            R.raw.map_style
+        )
+    )
+    if (!success) {
+        Log.e("MapStyle","Style parsing failed.")
+    }
+}catch (e: Resources.NotFoundException){
+    Log.e("mapStyleNotFound","${e.message}")
+}
     }
 
     private fun setLocationClick(gmap: GoogleMap) {
-        gmap.setOnMapClickListener {
-            val theAddress=Geocoder(context, Locale.getDefault()).getFromLocation(it.latitude, it.longitude, 1)
-            if (theAddress.isNotEmpty()){
-                val theAddress: String = theAddress[0].getAddressLine(0)
-                val theAddressPoi = PointOfInterest(it, null, theAddress)
-                currentPOIMarker?.remove()
-                val poiMarker = gmap.addMarker(
-                    MarkerOptions()
-                        .position(theAddressPoi.latLng)
-                        .title(theAddressPoi.name)
-                )
-                poiMarker?.showInfoWindow()
-                currentPOIMarker = poiMarker
-                currentPOI = theAddressPoi
-            }
-        }
+gmap.setOnMapClickListener {
+    val theAddress=Geocoder(context, Locale.getDefault()).getFromLocation(it.latitude, it.longitude, 1)
+if (theAddress.isNotEmpty()){
+    val theAddress: String = theAddress[0].getAddressLine(0)
+    val theAddressPoi = PointOfInterest(it, null, theAddress)
+    currentPOIMarker?.remove()
+    val poiMarker = gmap.addMarker(
+        MarkerOptions()
+            .position(theAddressPoi.latLng)
+            .title(theAddressPoi.name)
+    )
+    poiMarker?.showInfoWindow()
+    currentPOIMarker = poiMarker
+    currentPOI = theAddressPoi
+}
+}
     }
 
     private fun setPoiClick(gmap: GoogleMap) {
-        gmap.setOnPoiClickListener { pointOfInterest ->
-            currentPOIMarker?.remove()
-            val pointOfInterestMarker=gmap.addMarker(
-                MarkerOptions()
-                    .position(pointOfInterest.latLng)
-                    .title(pointOfInterest.name)
-            )
-            pointOfInterestMarker.showInfoWindow()
-            currentPOIMarker=pointOfInterestMarker
-            currentPOI=pointOfInterest
+gmap.setOnPoiClickListener { pointOfInterest ->
+    currentPOIMarker?.remove()
+    val pointOfInterestMarker=gmap.addMarker(
+        MarkerOptions()
+            .position(pointOfInterest.latLng)
+            .title(pointOfInterest.name)
+    )
+    pointOfInterestMarker.showInfoWindow()
+    currentPOIMarker=pointOfInterestMarker
+    currentPOI=pointOfInterest
 
-        }
+}
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
