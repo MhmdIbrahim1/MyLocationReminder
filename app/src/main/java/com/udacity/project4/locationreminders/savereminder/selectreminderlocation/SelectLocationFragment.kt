@@ -2,6 +2,7 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
@@ -10,8 +11,10 @@ import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
+import androidx.navigation.fragment.findNavController
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
@@ -48,6 +51,65 @@ class SelectLocationFragment : BaseFragment() {
         setDisplayHomeAsUpEnabled(true)
 
 //        TODO: add the map setup implementation
+        val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.let {
+            mapFragment.getMapAsync(this)
+        }
+        fusedLocationProviderClient =
+            LocationServices.getFusedLocationProviderClient(requireContext())
+
+        binding.saveLocation.setOnClickListener {
+            locationSelected()
+        }
+
+
+        return binding.root
+    }
+
+    private fun locationSelected() {
+        if(currentPOI==null)
+            Toast.makeText(context, getString(R.string.selectpoi), Toast.LENGTH_SHORT).show()
+        else {
+            _viewModel.savePOILocation(currentPOI)
+            findNavController().navigate(SelectLocationFragmentDirections.actionSelectLocationFragmentToSaveReminderFragment())
+
+        }
+    }
+    override fun onMapReady(gmap: GoogleMap) {
+        googleMap=gmap
+
+        setPoiClick(googleMap)
+        setLocationClick(googleMap)
+        setMapStyle(googleMap)
+        enableMyLocation()
+
+    }
+    @SuppressLint("MissingPermission")
+    private fun enableMyLocation() {
+        if (isPermissionGranted()) {
+            googleMap.isMyLocationEnabled = true
+            zoomToCurrentLocation(true)
+        } else if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            Snackbar.make(
+                requireActivity().findViewById(android.R.id.content),
+                R.string.location_required_error,
+                Snackbar.LENGTH_INDEFINITE
+            )
+                .setAction(android.R.string.ok) {
+                    requestPermissions(
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        REQUEST_LOCATION_PERMISSION
+                    )
+                }.show()
+        } else {
+            requestPermissions(
+                arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_LOCATION_PERMISSION
+            )
+        }
+    }
+
+
 //        TODO: zoom to the user location after taking his permission
 //        TODO: add style to the map
 //        TODO: put a marker to location that the user selected
