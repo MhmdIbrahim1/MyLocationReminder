@@ -82,4 +82,5 @@ class AuthenticationActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+
 }

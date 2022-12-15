@@ -23,7 +23,7 @@ class ReminderListFragment : BaseFragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding =
             DataBindingUtil.inflate(
                 inflater,
@@ -55,8 +55,8 @@ class ReminderListFragment : BaseFragment() {
         _viewModel.loadReminders()
     }
 
+    //use the navigationCommand live data to navigate between the fragments
     private fun navigateToAddReminder() {
-        //use the navigationCommand live data to navigate between the fragments
         _viewModel.navigationCommand.postValue(
             NavigationCommand.To(
                 ReminderListFragmentDirections.toSaveReminder()
@@ -64,11 +64,10 @@ class ReminderListFragment : BaseFragment() {
         )
     }
 
+    //  setup the recycler view using the extension function
     private fun setupRecyclerView() {
         val adapter = RemindersListAdapter {
         }
-
-//        setup the recycler view using the extension function
         binding.reminderssRecyclerView.setup(adapter)
     }
 
@@ -85,10 +84,10 @@ class ReminderListFragment : BaseFragment() {
 
     }
 
+    //   display logout as menu item
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
-//        display logout as menu item
+
         inflater.inflate(R.menu.main_menu, menu)
     }
-
 }

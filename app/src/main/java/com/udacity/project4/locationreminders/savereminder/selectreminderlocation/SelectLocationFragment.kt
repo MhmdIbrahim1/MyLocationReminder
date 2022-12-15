@@ -3,19 +3,24 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
+import android.annotation.TargetApi
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.content.res.Resources
+import android.location.Geocoder
+import android.location.Location
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.*
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.navigation.fragment.findNavController
-import com.google.android.gms.common.api.ApiException
+import com.firebase.ui.auth.data.model.Resource
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -24,23 +29,31 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.material.snackbar.Snackbar
+import com.udacity.project4.BuildConfig
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
-import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.sharedViewModel
+import java.lang.Exception
+import java.util.*
 
-class SelectLocationFragment : BaseFragment() {
+class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
-    //Use Koin to get the view model of the SaveReminder
-    override val _viewModel: SaveReminderViewModel by inject()
+    override val _viewModel: SaveReminderViewModel by sharedViewModel()
+    private lateinit var googleMap: GoogleMap
     private lateinit var binding: FragmentSelectLocationBinding
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+
+    private var currentPOI: PointOfInterest? = null
+    private var currentPOIMarker: Marker? = null
+    private val REQUEST_LOCATION_PERMISSION = 1
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding =
             DataBindingUtil.inflate(inflater, R.layout.fragment_select_location, container, false)
 
@@ -49,12 +62,13 @@ class SelectLocationFragment : BaseFragment() {
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
-
-//        TODO: add the map setup implementation
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.let {
             mapFragment.getMapAsync(this)
         }
+
+
+
         fusedLocationProviderClient =
             LocationServices.getFusedLocationProviderClient(requireContext())
 
@@ -75,6 +89,7 @@ class SelectLocationFragment : BaseFragment() {
 
         }
     }
+
     override fun onMapReady(gmap: GoogleMap) {
         googleMap=gmap
 
@@ -84,6 +99,7 @@ class SelectLocationFragment : BaseFragment() {
         enableMyLocation()
 
     }
+
     @SuppressLint("MissingPermission")
     private fun enableMyLocation() {
         if (isPermissionGranted()) {
@@ -109,45 +125,183 @@ class SelectLocationFragment : BaseFragment() {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private fun zoomToCurrentLocation(b: Boolean) {
+        val locationRequest = LocationRequest.create().apply {
+            priority = LocationRequest.PRIORITY_LOW_POWER
+        }
+        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
+        val settingsClient = LocationServices.getSettingsClient(requireActivity())
+        val locationSettingsResponseTask =
+            settingsClient.checkLocationSettings(builder.build())
+        locationSettingsResponseTask.addOnFailureListener { exception ->
+            if (exception is ResolvableApiException && b) {
 
-//        TODO: zoom to the user location after taking his permission
-//        TODO: add style to the map
-//        TODO: put a marker to location that the user selected
-
-
-//        TODO: call this function after the user confirms on the selected location
-        onLocationSelected()
-
-        return binding.root
+                startIntentSenderForResult(
+                    exception.resolution.intentSender,
+                    REQUEST_TURN_DEVICE_LOCATION_ON,
+                    null,
+                    0,
+                    0,
+                    0,
+                    null
+                )
+            } else {
+                Snackbar.make(
+                    binding.root,
+                    R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
+                ).setAction(android.R.string.ok) {
+                    zoomToCurrentLocation(true)
+                }.show()
+            }
+        }
+        locationSettingsResponseTask.addOnCompleteListener {
+            if (it.isSuccessful) {
+                fusedLocationProviderClient.lastLocation
+                    .addOnSuccessListener { location: Location? ->
+                        // Got last known location. In some rare situations this can be null.
+                        if (location != null) {
+                            val zoomLevel = 15f
+                            val currentLatLng = LatLng(location.latitude, location.longitude)
+                            googleMap.moveCamera(
+                                CameraUpdateFactory.newLatLngZoom(
+                                    currentLatLng,
+                                    zoomLevel
+                                )
+                            )
+                        }
+                    }
+            }
+        }
     }
 
-    private fun onLocationSelected() {
-        //        TODO: When the user confirms on the selected location,
-        //         send back the selected location details to the view model
-        //         and navigate back to the previous fragment to save the reminder and add the geofence
+    private fun isPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+                &&
+                ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+
     }
 
+    private fun setMapStyle(gmap: GoogleMap) {
+        try {
+            val success = gmap.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    context,
+                    R.raw.map_style
+                )
+            )
+            if (!success) {
+                Log.e("MapStyle","Style parsing failed.")
+            }
+        }catch (e: Resources.NotFoundException){
+            Log.e("mapStyleNotFound","${e.message}")
+        }
+    }
+
+    private fun setLocationClick(gmap: GoogleMap) {
+        gmap.setOnMapClickListener {
+            val theAddress=Geocoder(context, Locale.getDefault()).getFromLocation(it.latitude, it.longitude, 1)
+            if (theAddress.isNotEmpty()){
+                val theAddress: String = theAddress[0].getAddressLine(0)
+                val theAddressPoi = PointOfInterest(it, null, theAddress)
+                currentPOIMarker?.remove()
+                val poiMarker = gmap.addMarker(
+                    MarkerOptions()
+                        .position(theAddressPoi.latLng)
+                        .title(theAddressPoi.name)
+                )
+                poiMarker?.showInfoWindow()
+                currentPOIMarker = poiMarker
+                currentPOI = theAddressPoi
+            }
+        }
+    }
+
+    private fun setPoiClick(gmap: GoogleMap) {
+        gmap.setOnPoiClickListener { pointOfInterest ->
+            currentPOIMarker?.remove()
+            val pointOfInterestMarker=gmap.addMarker(
+                MarkerOptions()
+                    .position(pointOfInterest.latLng)
+                    .title(pointOfInterest.name)
+            )
+            pointOfInterestMarker.showInfoWindow()
+            currentPOIMarker=pointOfInterestMarker
+            currentPOI=pointOfInterest
+
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            REQUEST_TURN_DEVICE_LOCATION_ON -> {
+                zoomToCurrentLocation(false)
+            }
+        }
+    }
+    @SuppressLint("MissingPermission")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Check if location permissions are granted and if so enable the
+        // location data layer.
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.isNotEmpty() && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                googleMap.isMyLocationEnabled = true
+                zoomToCurrentLocation(false)
+            } else {
+                Snackbar.make(
+                    requireActivity().findViewById(android.R.id.content),
+                    R.string.location_required_error,
+                    Snackbar.LENGTH_INDEFINITE
+                )
+                    .setAction(R.string.settings) {
+                        startActivity(Intent().apply {
+                            action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                            data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        })
+                    }.show()
+            }
+        }
+
+    }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.map_options, menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        // TODO: Change the map type based on the user's selection.
+    override fun onOptionsItemSelected(item: MenuItem)= when (item.itemId) {
         R.id.normal_map -> {
+            googleMap.mapType = GoogleMap.MAP_TYPE_NORMAL
             true
         }
         R.id.hybrid_map -> {
+            googleMap.mapType = GoogleMap.MAP_TYPE_HYBRID
             true
         }
         R.id.satellite_map -> {
+            googleMap.mapType = GoogleMap.MAP_TYPE_SATELLITE
             true
         }
         R.id.terrain_map -> {
+            googleMap.mapType = GoogleMap.MAP_TYPE_TERRAIN
             true
         }
-        else -> super.onOptionsItemSelected(item)
+        else -> super.onOptionsItemSelected(item)    }
+
+    companion object {
+        private const val REQUEST_TURN_DEVICE_LOCATION_ON = 1002
     }
-
-
 }
