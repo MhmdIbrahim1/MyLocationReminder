@@ -101,6 +101,19 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
         onView(ViewMatchers.withText(reminder.location)).check(ViewAssertions.matches(ViewMatchers.isDisplayed()))
         Thread.sleep(1000)
     }
-//    TODO: test the displayed data on the UI.
-//    TODO: add testing for the error messages.
+
+    @Test
+    fun listOfReminder_navigateToAddReminder() {
+        Thread.sleep(2000)
+        val scenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        val navController = mock(NavController::class.java)
+        scenario.onFragment {
+            Navigation.setViewNavController(it.view!!, navController)
+        }
+        onView(withId(R.id.addReminderFAB))
+            .perform(click())
+        verify(navController).navigate(
+            ReminderListFragmentDirections.toSaveReminder()
+        )
+    }
 }
