@@ -6,8 +6,11 @@ import android.os.Bundle
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
+import androidx.test.espresso.Espresso
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions
 import androidx.test.espresso.matcher.ViewMatchers
@@ -15,11 +18,14 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.udacity.project4.R
+import com.udacity.project4.locationreminders.RemindersActivity
 import com.udacity.project4.locationreminders.data.ReminderDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.local.LocalDB
 import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
+import com.udacity.project4.util.DataBindingIdlingResource
+import com.udacity.project4.util.monitorActivity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -41,9 +47,9 @@ import org.mockito.Mockito.verify
 @MediumTest
 class ReminderListFragmentTest : AutoCloseKoinTest() {
 
-//    TODO: test the navigation of the fragments.
    private lateinit var repository: ReminderDataSource
     private lateinit var appContext: Application
+    private val dataBindingIdlingResource = DataBindingIdlingResource()
 
    // we'll also use Koin to test our code.
     // at this step we will initialize Koin related code to be able to use it in out testing.
@@ -116,4 +122,33 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
             ReminderListFragmentDirections.toSaveReminder()
         )
     }
+
+    @Test
+    fun addReminder() = runBlocking {
+        val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
+
+        dataBindingIdlingResource.monitorActivity(activityScenario)
+        Espresso.onView(withId(R.id.noDataTextView)).check(ViewAssertions.matches(ViewMatchers.isDisplayed()))
+        Espresso.onView(withId(R.id.addReminderFAB)).perform(ViewActions.click())
+        Espresso.onView(withId(R.id.reminderTitle)).perform(ViewActions.replaceText("Remember to breathe"))
+        Espresso.onView(withId(R.id.reminderDescription)).perform(ViewActions.replaceText("Suck the invisible air into your lungs"))
+        Espresso.onView(withId(R.id.selectLocation)).perform(ViewActions.click())
+        Espresso.onView(withId(R.id.map)).perform(ViewActions.click())
+        Espresso.pressBack()
+
+        repository.saveReminder(
+            ReminderDTO(
+                "Remember to breathe",
+                "Suck the invisible air into your lungs",
+                "Anywhere",
+                0.0,
+                0.0
+            )
+        )
+        Espresso.onView(ViewMatchers.withText("Remember to breathe")).check(ViewAssertions.matches(ViewMatchers.isDisplayed()))
+        Espresso.onView(ViewMatchers.withText("Suck the invisible air into your lungs")).check(ViewAssertions.matches(ViewMatchers.isDisplayed()))
+        Thread.sleep(1000)
+        activityScenario.close()
+    }
+
 }

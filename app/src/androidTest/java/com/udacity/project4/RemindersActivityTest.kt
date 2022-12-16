@@ -2,6 +2,7 @@ package com.udacity.project4
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
+import androidx.test.espresso.IdlingRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.udacity.project4.locationreminders.data.ReminderDataSource
@@ -9,7 +10,9 @@ import com.udacity.project4.locationreminders.data.local.LocalDB
 import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
 import com.udacity.project4.locationreminders.reminderslist.RemindersListViewModel
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
+import com.udacity.project4.util.DataBindingIdlingResource
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -27,6 +30,7 @@ class RemindersActivityTest :
 
     private lateinit var repository: ReminderDataSource
     private lateinit var appContext: Application
+    private val dataBindingIdlingResource = DataBindingIdlingResource()
 
     /**
      * As we use Koin as a Service Locator Library to develop our code, we'll also use Koin to test our code.
@@ -65,7 +69,50 @@ class RemindersActivityTest :
         }
     }
 
+    @Before
+    fun registerIdlingResources() {
+        IdlingRegistry.getInstance().register(dataBindingIdlingResource)
+    }
 
-//    TODO: add End to End testing to the app
+    @After
+    fun unregisterIdlingResources() {
+        IdlingRegistry.getInstance().unregister(dataBindingIdlingResource)
+    }
+
+
+    @Test
+    fun createReminder_NoLocation_showSnackbar() {
+        Thread.sleep(1000)
+        val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
+        dataBindingIdlingResource.monitorActivity(activityScenario)
+
+        Espresso.onView(withId(R.id.noDataTextView))
+            .check(ViewAssertions.matches(ViewMatchers.isDisplayed()))
+        Espresso.onView(withId(R.id.addReminderFAB)).perform(ViewActions.click())
+        Espresso.onView(withId(R.id.reminderTitle))
+            .perform(ViewActions.replaceText("TITLE"))
+        Espresso.onView(withId(R.id.saveReminder)).perform(ViewActions.click())
+        Espresso.onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(ViewAssertions.matches(ViewMatchers.withText(R.string.err_select_location)))
+
+        activityScenario.close()
+    }
+
+    @Test
+    fun createReminder_noTitle_showSnackbar() {
+        Thread.sleep(1000)
+        val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
+        dataBindingIdlingResource.monitorActivity(activityScenario)
+
+        Espresso.onView(withId(R.id.noDataTextView))
+            .check(ViewAssertions.matches(ViewMatchers.isDisplayed()))
+        Espresso.onView(withId(R.id.addReminderFAB)).perform(ViewActions.click())
+        Espresso.onView(withId(R.id.saveReminder)).perform(ViewActions.click())
+        Espresso.onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(ViewAssertions.matches(ViewMatchers.withText(R.string.err_enter_title)))
+
+        activityScenario.close()
+    }
+
 
 }
