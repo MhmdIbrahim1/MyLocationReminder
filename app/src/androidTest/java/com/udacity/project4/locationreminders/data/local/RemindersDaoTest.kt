@@ -84,5 +84,5 @@ class RemindersDaoTest {
         assertThat(reminder, CoreMatchers.nullValue())
 
     }
-    //end 
+    //end
 }
