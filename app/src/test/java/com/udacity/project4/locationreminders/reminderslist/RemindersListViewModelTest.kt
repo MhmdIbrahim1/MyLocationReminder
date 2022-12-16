@@ -8,6 +8,4 @@ import org.junit.runner.RunWith
 @ExperimentalCoroutinesApi
 class RemindersListViewModelTest {
 
-    
-
 }
