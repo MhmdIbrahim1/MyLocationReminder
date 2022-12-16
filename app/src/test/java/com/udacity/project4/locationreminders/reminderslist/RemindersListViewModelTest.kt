@@ -50,4 +50,16 @@ class RemindersListViewModelTest {
             Matchers.`is`(false)
         )
     }
+
+
+    @Test
+    fun shouldReturnError() = mainCoroutineRule.runBlockingTest {
+        datasource.setReturnError(true)
+        remindersListViewModel.loadReminders()
+        MatcherAssert.assertThat(
+            remindersListViewModel.showSnackBar.getOrAwaitValue(),
+            Matchers.`is`("Test Exception")
+        )
+    }
+
 }
