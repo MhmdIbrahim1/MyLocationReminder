@@ -38,4 +38,7 @@ class FakeDataSource(var reminders: MutableList<ReminderDTO>? = mutableListOf())
     }
 
 
+    fun setReturnError(value: Boolean) {
+        shouldReturnError = value
+    }
 }
