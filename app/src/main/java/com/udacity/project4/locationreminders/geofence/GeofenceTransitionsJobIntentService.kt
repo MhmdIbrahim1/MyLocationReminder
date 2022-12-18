@@ -18,14 +18,14 @@ import kotlin.coroutines.CoroutineContext
 
 class GeofenceTransitionsJobIntentService : JobIntentService(), CoroutineScope {
 
-    private val remindersLocalRepository: ReminderDataSource by inject()
-    private val TAG = "GeofenceTransitionsJobIntentService"
     private var coroutineJob: Job = Job()
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.IO + coroutineJob
 
     companion object {
+        private val TAG = "GeofenceTransitionsJobIntentService"
         private const val JOB_ID = 573
+        // call this to start the JobIntentService to handle the geofencing transition events
         fun enqueueWork(context: Context, intent: Intent) {
             enqueueWork(
                 context,
@@ -37,6 +37,7 @@ class GeofenceTransitionsJobIntentService : JobIntentService(), CoroutineScope {
 
     @SuppressLint("LongLogTag")
     override fun onHandleWork(intent: Intent) {
+        // send a notification to the user when he enters the geofence area
         val geofencingEvent = GeofencingEvent.fromIntent(intent)
         if (geofencingEvent.hasError()) {
             val errorMessage = geofencingEvent.errorCode
@@ -49,7 +50,11 @@ class GeofenceTransitionsJobIntentService : JobIntentService(), CoroutineScope {
         }
 
     }
-    //TODO: get the request id of the current geofence
+    // If the user went to a location with multiple triggering Geofences,
+    // only one notification would appear.
+    // Since the user might want to add multiple reminders at the same location,
+    // please make sure to use a for loop to loop through all triggering Geofences instead of just getting only one triggering Geofence.
+    // #done
     private fun sendNotification(triggeringGeofences: List<Geofence>) {
         triggeringGeofences.forEach {
             val requestId = it.requestId
