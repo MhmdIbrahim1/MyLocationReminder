@@ -27,9 +27,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     val currentLocationSet: LiveData<Boolean>
         get() = _currentLocationSet
     val savedReminder = SingleLiveEvent<ReminderDataItem>()
-    /**
-     * Clear the live data objects to start fresh next time the view model gets called
-     */
+   //Clear the live data objects to start fresh next time the view model gets called
     fun onClear() {
         reminderTitle.value = null
         reminderDescription.value = null
@@ -44,9 +42,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
         _currentLocationSet.value = false
     }
 
-    /**
-     * Validate the entered data then saves the reminder data to the DataSource
-     */
+  // Validate the entered data then saves the reminder data to the DataSource
     fun setCurrentLocationObtained(isCurrentLocationObtained: Boolean) {
         _currentLocationSet.value = isCurrentLocationObtained
     }
@@ -57,9 +53,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
         }
     }
 
-    /**
-     * Save the reminder to the data source
-     */
+    // Save the reminder to the data source
 
     fun onSaveReminder(reminderData: ReminderDataItem) {
         savedReminder.value = reminderData
@@ -90,9 +84,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
 
 
 
-    /**
-     * Validate the entered data and show error to the user if there's any invalid data
-     */
+   // Validate the entered data and show error to the user if there's any invalid data
     fun validateEnteredData(reminderData: ReminderDataItem): Boolean {
         if (reminderData.title.isNullOrEmpty()) {
             showSnackBarInt.value = R.string.err_enter_title
