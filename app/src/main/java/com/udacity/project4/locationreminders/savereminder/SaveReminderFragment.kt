@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit
 
 class SaveReminderFragment : BaseFragment() {
     private lateinit var reminderDataItem: ReminderDataItem
+    //Get the view model this time as a single to be shared with the another fragment
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSaveReminderBinding
     lateinit var geofencingClient: GeofencingClient
@@ -93,7 +94,6 @@ class SaveReminderFragment : BaseFragment() {
 
     @SuppressLint("MissingPermission")
     private fun addGeofenceForClue() {
-//        val reminder = _viewModel.savedReminder.value ?: return
         val geofence = Geofence.Builder()
             .setRequestId(reminderDataItem.id)
             .setCircularRegion(
@@ -119,17 +119,13 @@ class SaveReminderFragment : BaseFragment() {
         }
     }
 
-
-    private fun checkingPermissionsAndStartGeofencing() {
-        if (foregroundAndBackgroundLocationPermissionApproved()) {
-            checkingDeviceLocationSettingsAndStartGeofence()
-        } else {
-            requestingForegroundAndBackgroundLocationPermissions()
-        }
-    }
-
+    /*
+       *  Determines whether the app has the appropriate permissions across Android 10+ and all other
+       *  Android versions.
+       */
     @TargetApi(29)
     private fun foregroundAndBackgroundLocationPermissionApproved(): Boolean {
+
         val foregroundLocationApproved = (
                 PackageManager.PERMISSION_GRANTED ==
                         ActivityCompat.checkSelfPermission(
@@ -153,7 +149,13 @@ class SaveReminderFragment : BaseFragment() {
     private fun requestingForegroundAndBackgroundLocationPermissions() {
         if (foregroundAndBackgroundLocationPermissionApproved())
             return
+        //The permissionsArray contains the permissions that are going to be requested. Initially, add ACCESS_FINE_LOCATION since that will be needed on all API levels.
         var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        //     //Below it, you will need a resultCode. The code will be different depending on if the device is running Q or later and will inform
+//     us if you need to check for one permission (fine location) or multiple permissions (fine and background location) when the user returns from the
+//     permission request screen. Add a when statement to check the version running and assign result code to
+//     REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE if the device is running Q or later and
+//     REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE if not.
         val resultCode = when {
             runningOnQOrLater -> {
                 permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
@@ -167,12 +169,36 @@ class SaveReminderFragment : BaseFragment() {
         )
     }
 
+    /**
+     * check if these below permissions is granted or not
+     * * ACCESS_FINE_LOCATION
+     * * ACCESS_BACKGROUND_LOCATION
+     */
+
+    private fun checkingPermissionsAndStartGeofencing() {
+        if (foregroundAndBackgroundLocationPermissionApproved()) {
+            checkingDeviceLocationSettingsAndStartGeofence()
+        } else {
+            requestingForegroundAndBackgroundLocationPermissions()
+        }
+    }
+
+
+    /*
+     * In all cases, we need to have the location permission.  On Android 10+ (Q) we need to have
+     * the background permission as well.
+     */
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Permissions can be denied in a few ways:
+        //If the grantResults array is empty, then the interaction was interrupted and the permission request was cancelled.
+        //If the grantResults array’s value at the LOCATION_PERMISSION_INDEX has a PERMISSION_DENIED it means that the user denied foreground permissions.
+        //If the request code equals REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE and the BACKGROUND_LOCATION_PERMISSION_INDEX is denied it means that the device is running API 29 or above and that background permissions were denied.
+
         if (
             grantResults.isEmpty() ||
             grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
@@ -234,7 +260,9 @@ class SaveReminderFragment : BaseFragment() {
         }
     }
 
-
+    // Replace the code below in the onActivityResult() method. After the user
+    // chooses whether to accept or deny device location permissions, this checks
+    // if the user has chosen to accept the permissions. If not, it will ask again.
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -260,7 +288,6 @@ class SaveReminderFragment : BaseFragment() {
 private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
 private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
 private const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
-private const val TAG = "HuntMainActivity"
 private const val LOCATION_PERMISSION_INDEX = 0
 private const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1
 
