@@ -3,9 +3,7 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
 import android.content.Intent
-import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.location.Geocoder
@@ -16,11 +14,9 @@ import android.provider.Settings
 import android.util.Log
 import android.view.*
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.navigation.fragment.findNavController
-import com.firebase.ui.auth.data.model.Resource
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -36,8 +32,6 @@ import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
-import org.koin.androidx.viewmodel.ext.android.sharedViewModel
-import java.lang.Exception
 import java.util.*
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
@@ -83,9 +77,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     private fun locationSelected() {
-        if(currentPOI==null)
+        if (currentPOI == null)
             Toast.makeText(context, getString(R.string.selectpoi), Toast.LENGTH_SHORT).show()
-else {
+        else {
             _viewModel.savePOILocation(currentPOI)
             findNavController().navigate(SelectLocationFragmentDirections.actionSelectLocationFragmentToSaveReminderFragment())
 
@@ -93,7 +87,7 @@ else {
     }
 
     override fun onMapReady(gmap: GoogleMap) {
-        googleMap=gmap
+        googleMap = gmap
 
         setPoiClick(googleMap)
         setLocationClick(googleMap)
@@ -202,45 +196,46 @@ else {
                 )
             )
             if (!success) {
-                Log.e("MapStyle","Style parsing failed.")
+                Log.e("MapStyle", "Style parsing failed.")
             }
-        }catch (e: Resources.NotFoundException){
-            Log.e("mapStyleNotFound","${e.message}")
+        } catch (e: Resources.NotFoundException) {
+            Log.e("mapStyleNotFound", "${e.message}")
         }
-            }
+    }
 
     private fun setLocationClick(gmap: GoogleMap) {
         gmap.setOnMapClickListener {
-            val theAddress=Geocoder(context, Locale.getDefault()).getFromLocation(it.latitude, it.longitude, 1)
-        if (theAddress.isNotEmpty()){
-            val theAddress: String = theAddress[0].getAddressLine(0)
-            val theAddressPoi = PointOfInterest(it, null, theAddress)
-            currentPOIMarker?.remove()
-            val poiMarker = gmap.addMarker(
-                MarkerOptions()
-                    .position(theAddressPoi.latLng)
-                    .title(theAddressPoi.name)
-            )
-            poiMarker?.showInfoWindow()
-            currentPOIMarker = poiMarker
-            currentPOI = theAddressPoi
-          }
+            val theAddress =
+                Geocoder(context, Locale.getDefault()).getFromLocation(it.latitude, it.longitude, 1)
+            if (theAddress.isNotEmpty()) {
+                val theAddress: String = theAddress[0].getAddressLine(0)
+                val theAddressPoi = PointOfInterest(it, null, theAddress)
+                currentPOIMarker?.remove()
+                val poiMarker = gmap.addMarker(
+                    MarkerOptions()
+                        .position(theAddressPoi.latLng)
+                        .title(theAddressPoi.name)
+                )
+                poiMarker?.showInfoWindow()
+                currentPOIMarker = poiMarker
+                currentPOI = theAddressPoi
+            }
         }
     }
 
     private fun setPoiClick(gmap: GoogleMap) {
-gmap.setOnPoiClickListener { pointOfInterest ->
-    currentPOIMarker?.remove()
-    val pointOfInterestMarker=gmap.addMarker(
-        MarkerOptions()
-            .position(pointOfInterest.latLng)
-            .title(pointOfInterest.name)
-    )
-    pointOfInterestMarker.showInfoWindow()
-    currentPOIMarker=pointOfInterestMarker
-    currentPOI=pointOfInterest
+        gmap.setOnPoiClickListener { pointOfInterest ->
+            currentPOIMarker?.remove()
+            val pointOfInterestMarker = gmap.addMarker(
+                MarkerOptions()
+                    .position(pointOfInterest.latLng)
+                    .title(pointOfInterest.name)
+            )
+            pointOfInterestMarker.showInfoWindow()
+            currentPOIMarker = pointOfInterestMarker
+            currentPOI = pointOfInterest
 
-}
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -251,6 +246,7 @@ gmap.setOnPoiClickListener { pointOfInterest ->
             }
         }
     }
+
     @SuppressLint("MissingPermission")
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -286,7 +282,7 @@ gmap.setOnPoiClickListener { pointOfInterest ->
         inflater.inflate(R.menu.map_options, menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem)= when (item.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
         R.id.normal_map -> {
             googleMap.mapType = GoogleMap.MAP_TYPE_NORMAL
             true
@@ -303,7 +299,8 @@ gmap.setOnPoiClickListener { pointOfInterest ->
             googleMap.mapType = GoogleMap.MAP_TYPE_TERRAIN
             true
         }
-        else -> super.onOptionsItemSelected(item)    }
+        else -> super.onOptionsItemSelected(item)
+    }
 
     companion object {
         private const val REQUEST_TURN_DEVICE_LOCATION_ON = 1002
