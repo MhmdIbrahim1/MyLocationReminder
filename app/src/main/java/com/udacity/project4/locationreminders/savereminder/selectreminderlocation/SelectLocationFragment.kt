@@ -42,7 +42,8 @@ import java.util.*
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
-    override val _viewModel: SaveReminderViewModel by sharedViewModel()
+    //Use Koin to get the view model of the SaveReminder
+    override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var googleMap: GoogleMap
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
@@ -62,6 +63,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.let {
             mapFragment.getMapAsync(this)
@@ -190,38 +192,40 @@ else {
     }
 
     private fun setMapStyle(gmap: GoogleMap) {
-try {
-    val success = gmap.setMapStyle(
-        MapStyleOptions.loadRawResourceStyle(
-            context,
-            R.raw.map_style
-        )
-    )
-    if (!success) {
-        Log.e("MapStyle","Style parsing failed.")
-    }
-}catch (e: Resources.NotFoundException){
-    Log.e("mapStyleNotFound","${e.message}")
-}
-    }
+        // Customize the styling of the base map using a JSON object defined
+        // in a raw resource file.
+        try {
+            val success = gmap.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    context,
+                    R.raw.map_style
+                )
+            )
+            if (!success) {
+                Log.e("MapStyle","Style parsing failed.")
+            }
+        }catch (e: Resources.NotFoundException){
+            Log.e("mapStyleNotFound","${e.message}")
+        }
+            }
 
     private fun setLocationClick(gmap: GoogleMap) {
-gmap.setOnMapClickListener {
-    val theAddress=Geocoder(context, Locale.getDefault()).getFromLocation(it.latitude, it.longitude, 1)
-if (theAddress.isNotEmpty()){
-    val theAddress: String = theAddress[0].getAddressLine(0)
-    val theAddressPoi = PointOfInterest(it, null, theAddress)
-    currentPOIMarker?.remove()
-    val poiMarker = gmap.addMarker(
-        MarkerOptions()
-            .position(theAddressPoi.latLng)
-            .title(theAddressPoi.name)
-    )
-    poiMarker?.showInfoWindow()
-    currentPOIMarker = poiMarker
-    currentPOI = theAddressPoi
-}
-}
+        gmap.setOnMapClickListener {
+            val theAddress=Geocoder(context, Locale.getDefault()).getFromLocation(it.latitude, it.longitude, 1)
+        if (theAddress.isNotEmpty()){
+            val theAddress: String = theAddress[0].getAddressLine(0)
+            val theAddressPoi = PointOfInterest(it, null, theAddress)
+            currentPOIMarker?.remove()
+            val poiMarker = gmap.addMarker(
+                MarkerOptions()
+                    .position(theAddressPoi.latLng)
+                    .title(theAddressPoi.name)
+            )
+            poiMarker?.showInfoWindow()
+            currentPOIMarker = poiMarker
+            currentPOI = theAddressPoi
+          }
+        }
     }
 
     private fun setPoiClick(gmap: GoogleMap) {
